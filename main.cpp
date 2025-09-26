@@ -1,16 +1,30 @@
 #include <iostream>
 #include <string>
 
+using namespace std;
+
 int main() {
   // Flush after every std::cout / std:cerr
-  std::cout << std::unitbuf;
-  std::cerr << std::unitbuf;
+  cout << unitbuf;
+  cerr << unitbuf;
+  string input;
 
+  while(true){
+    cout << "$ ";
+
+    if(input == "\\q"){
+      cout << "Выход из shell";
+      break;
+    }
+    if(!input.emty()){
+      cout << "Введённая строка " << input << endl;
+    }
+    if(!getline(cin, input)){
+      cout << "Ctrl+D";
+      break;
+    }
+  }
   
-   std::cout << "$ ";
-
-  std::string input;
-  std::getline(std::cin, input);
 }
 
 
