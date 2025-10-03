@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <fstream>
 
 using namespace std;
 
@@ -26,6 +27,10 @@ int main() {
      if(input.find("echo ") == 0){
        cout << input.substr(4) << endl;
     }
+    ofstream fout;
+    fout.open("kubsh_history.txt");
+    fout << input;
+    fout.close();
   }
 }
 
