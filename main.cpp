@@ -23,8 +23,10 @@ int main() {
       cout << "Ctrl+D";
       break;
     }
+     if(input.find("echo ") == 0){
+       cout << input.substr(4) << endl;
+    }
   }
-  
 }
 
 
