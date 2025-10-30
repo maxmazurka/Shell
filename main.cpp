@@ -1,37 +1,68 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <vector>
 
 using namespace std;
 
+// Функция для загрузки истории из файла
+vector<string> loadHistory() {
+    vector<string> history;
+    ifstream file(getenv("HOME") + string("/.kubsh_history"));
+    string line;
+    
+    while (getline(file, line)) {
+        history.push_back(line);
+    }
+    return history;
+}
+
+// Функция для сохранения истории в файл
+void saveHistory(const vector<string>& history) {
+    ofstream file(getenv("HOME") + string("/.kubsh_history"));
+    for (const auto& command : history) {
+        file << command << endl;
+    }
+}
+
 int main() {
-  // Flush after every std::cout / std:cerr
-  cout << unitbuf;
-  cerr << unitbuf;
-  string input;
+    // Flush after every std::cout / std:cerr
+    cout << unitbuf;
+    cerr << unitbuf;
+    
+    string input;
+    vector<string> history = loadHistory();
+    
+    while(true) {
+        cout << "$ ";
+        
+        if (!getline(cin, input)) {
+            cout << "\nCtrl+D" << endl;
+            break;
+        }
+        
+        if (input != "\\q") {
+            history.push_back(input);
+        }
+        
+        if (input == "\\q") {
+            cout << "Выход из shell" << endl;
+            break;
+        }
+        
+        if (input.find("echo ") == 0) {
+            cout << input.substr(5) << endl;  
+        }
 
-  while(true){
-    cout << "$ ";
+        else {
+            cout << "Введённая строка: " << input << endl;
+        }
+    }
+    
 
-    if(input == "\\q"){
-      cout << "Выход из shell";
-      break;
-    }
-    if(!input.emty()){
-      cout << "Введённая строка " << input << endl;
-    }
-    if(!getline(cin, input)){
-      cout << "Ctrl+D";
-      break;
-    }
-     if(input.find("echo ") == 0){
-       cout << input.substr(4) << endl;
-    }
-    ofstream fout;
-    fout.open("kubsh_history.txt");
-    fout << input;
-    fout.close();
-  }
+    saveHistory(history);
+    
+    return 0;
 }
 
 
