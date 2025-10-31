@@ -56,6 +56,14 @@ int main() {
 
         else {
             cout << "Введённая строка: " << input << endl;
+            /*while(true) {
+                cout << input << endl;
+                if (cin.eof()) {
+                    cout << "\nCtrl+D" << endl;
+                    saveHistory(history);
+                    return 0;
+                }
+            }*/
         }
     }
     
