@@ -1,0 +1,37 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ make dpkg-dev docker.io
+
+      - name: Build project
+        run: make build
+
+      - name: Pull test image
+        run: docker pull tyvik/kubsh_test:master
+
+      - name: Run tests
+        run: make test
+
+      - name: Build deb package
+        run: make package
+
+      - name: Upload deb package
+        uses: actions/upload-artifact@v3
+        with:
+          name: kubsh-deb-package
+          path: kubsh_*.deb
