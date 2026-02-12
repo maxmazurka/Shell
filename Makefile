@@ -62,7 +62,7 @@ package: build
 # ============================================
 test: build
 	@echo "🧪 Запускаем тесты в Docker..."
-	docker run -it --rm \
+	docker run --rm \
 		-v /home/MSI:/mnt \
 		tyvik/kubsh_test:master \
 		bash -c "cp /mnt/kubsh /usr/local/bin/ && chmod +x /usr/local/bin/kubsh && cd /opt && pytest -v"
