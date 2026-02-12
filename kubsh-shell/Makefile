@@ -1,23 +1,17 @@
 # Makefile для kubsh
 
-# Имя программы
 TARGET = kubsh
 VERSION = 0.1.0
 
-# Компилятор и флаги
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra
 LDFLAGS = 
 
-# Исходные файлы
 SOURCES = main.cpp vfs.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
-# Цели не-файлы
+
 .PHONY: all build run clean package test help
 
-# ============================================
-# 1. Компиляция из исходников
-# ============================================
 all: build
 
 build: $(TARGET)
@@ -28,15 +22,9 @@ $(TARGET): $(OBJECTS)
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# ============================================
-# 2. Запуск kubsh
-# ============================================
 run: build
 	./$(TARGET)
 
-# ============================================
-# 3. Сборка deb-пакета
-# ============================================
 package: build
 	@echo "📦 Создаём DEB-пакет..."
 	mkdir -p package/usr/bin
@@ -49,16 +37,12 @@ package: build
 	@echo "Priority: optional" >> package/DEBIAN/control
 	@echo "Architecture: amd64" >> package/DEBIAN/control
 	@echo "Maintainer: Student <student@example.com>" >> package/DEBIAN/control
-	@echo "Depends: libfuse2" >> package/DEBIAN/control
 	@echo "Description: Custom shell with VFS" >> package/DEBIAN/control
 	@echo " Shell with command history, PATH execution, SIGHUP and VFS." >> package/DEBIAN/control
 	dpkg-deb --build package kubsh_$(VERSION)_amd64.deb
 	rm -rf package
 	@echo "✅ Пакет создан: kubsh_$(VERSION)_amd64.deb"
 
-# ============================================
-# Тесты в Docker
-# ============================================
 test: build
 	@echo "🧪 Запускаем тесты в Docker..."
 	docker run --rm \
@@ -66,17 +50,12 @@ test: build
 		tyvik/kubsh_test:master \
 		bash -c "cp /mnt/kubsh /usr/local/bin/ && chmod +x /usr/local/bin/kubsh && cd /opt && pytest -v"
 
-# ============================================
-# Очистка
-# ============================================
 clean:
 	rm -f $(TARGET) *.o
 	rm -f *.deb
 	rm -rf package
+	rm -rf /opt/users 2>/dev/null || true
 
-# ============================================
-# Справка
-# ============================================
 help:
 	@echo "========================================"
 	@echo "  KUBSH - Makefile"
