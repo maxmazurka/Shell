@@ -19,19 +19,25 @@ jobs:
           sudo apt-get install -y g++ make dpkg-dev
 
       - name: Build project
-        run: make build
+        run: |
+          cd kubsh-shell
+          make build
 
       - name: Pull test image
         run: docker pull tyvik/kubsh_test:master
 
       - name: Run tests
-        run: make test
+        run: |
+          cd kubsh-shell
+          make test
 
       - name: Build deb package
-        run: make package
+        run: |
+          cd kubsh-shell
+          make package
 
       - name: Upload deb package
         uses: actions/upload-artifact@v4
         with:
           name: kubsh-deb-package
-          path: kubsh_*.deb
+          path: kubsh-shell/kubsh_*.deb
