@@ -2,6 +2,9 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 using namespace std;
 
@@ -24,16 +27,23 @@ void saveHistory(const vector<string>& history) {
     }
 }
 
+void handle_signal(int sig) {
+    if (sig == SIGHUP) {
+        cout << "\nConfiguration reloaded" << endl;
+        cout << "$ " << flush;
+    }
+}
+
 int main() {
+    signal(SIGHUP, handle_signal);
+    
     cout << unitbuf;
     cerr << unitbuf;
     
     string input;
     vector<string> history = loadHistory();
     
-   while(true) {
-        // НЕ выводим "$ " сразу
-        
+    while(true) {
         if (!getline(cin, input)) {
             cout << "\nCtrl+D" << endl;
             break;
@@ -52,40 +62,121 @@ int main() {
             break;
         }
         
-        // DEBUG - МАКСИМАЛЬНО ПРОСТО
+        // DEBUG
         if (input.rfind("debug ", 0) == 0) {
             string text = input.substr(6);
-            
-            // Убираем кавычки
-            if (text.front() == '"' || text.front() == '\'') {
+            if (text.size() >= 2 && (text.front() == '"' || text.front() == '\'')) {
                 text = text.substr(1, text.size() - 2);
             }
-            
             cout << text << endl;
-            cout << "$ ";  // <- приглашение ТОЛЬКО после вывода
+            cout << "$ ";
             continue;
         }
-               // Команда \e - вывод переменной окружения
+        
+        // \e
         if (input.rfind("\\e ", 0) == 0) {
             string var = input.substr(3);
-            
-            // Убираем $ если есть
             if (var.front() == '$') {
                 var = var.substr(1);
             }
-            
             char* value = getenv(var.c_str());
             if (value != nullptr) {
-                cout << value << endl;
+                string env_value = value;
+                if (var == "PATH") {
+                    size_t pos = 0;
+                    while ((pos = env_value.find(':')) != string::npos) {
+                        cout << env_value.substr(0, pos) << endl;
+                        env_value.erase(0, pos + 1);
+                    }
+                    cout << env_value << endl;
+                } else {
+                    cout << env_value << endl;
+                }
             } else {
-                cout << endl;  // пустая строка если нет переменной
+                cout << endl;
             }
+            cout << "$ ";
             continue;
         }
-
- 
-        // Command not found
-        cout << input << ": command not found" << endl;
+        
+        // ЗАПУСК ПРОГРАММ
+        bool command_executed = false;
+        
+        // Специальная обработка для cat
+        if (input == "cat" || input.rfind("cat ", 0) == 0) {
+            const char* cat_path = "/bin/cat";
+            if (access(cat_path, X_OK) == 0) {
+                pid_t pid = fork();
+                if (pid == 0) {
+                    if (input == "cat") {
+                        execl(cat_path, "cat", nullptr);
+                    } else {
+                        string arg = input.substr(4);
+                        execl(cat_path, "cat", arg.c_str(), nullptr);
+                    }
+                    exit(1);
+                } else if (pid > 0) {
+                    wait(nullptr);
+                    command_executed = true;
+                }
+            }
+        }
+        // Поиск в PATH для остальных команд
+        else if (input.find('/') == string::npos && !command_executed) {
+            char* path_env = getenv("PATH");
+            if (path_env != nullptr) {
+                string path_str = path_env;
+                size_t pos = 0;
+                
+                while ((pos = path_str.find(':')) != string::npos) {
+                    string dir = path_str.substr(0, pos);
+                    string full_path = dir + "/" + input;
+                    
+                    if (access(full_path.c_str(), X_OK) == 0) {
+                        pid_t pid = fork();
+                        if (pid == 0) {
+                            execl(full_path.c_str(), input.c_str(), nullptr);
+                            exit(1);
+                        } else if (pid > 0) {
+                            wait(nullptr);
+                            command_executed = true;
+                        }
+                        break;
+                    }
+                    path_str.erase(0, pos + 1);
+                }
+                
+                if (!command_executed) {
+                    string full_path = path_str + "/" + input;
+                    if (access(full_path.c_str(), X_OK) == 0) {
+                        pid_t pid = fork();
+                        if (pid == 0) {
+                            execl(full_path.c_str(), input.c_str(), nullptr);
+                            exit(1);
+                        } else if (pid > 0) {
+                            wait(nullptr);
+                            command_executed = true;
+                        }
+                    }
+                }
+            }
+        } else if (!command_executed) {
+            if (access(input.c_str(), X_OK) == 0) {
+                pid_t pid = fork();
+                if (pid == 0) {
+                    execl(input.c_str(), input.c_str(), nullptr);
+                    exit(1);
+                } else if (pid > 0) {
+                    wait(nullptr);
+                    command_executed = true;
+                }
+            }
+        }
+        
+        if (!command_executed) {
+            cout << input << ": command not found" << endl;
+        }
+        
         cout << "$ ";
     }
     
