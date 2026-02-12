@@ -5,40 +5,42 @@
 
 using namespace std;
 
-// Функция для загрузки истории из файла
 vector<string> loadHistory() {
     vector<string> history;
-    ifstream file(getenv("HOME") + string("/.kubsh_history"));
+    string home = getenv("HOME");
+    ifstream file(home + "/.kubsh_history");
     string line;
-    
     while (getline(file, line)) {
         history.push_back(line);
     }
     return history;
 }
 
-// Функция для сохранения истории в файл
 void saveHistory(const vector<string>& history) {
-    ofstream file(getenv("HOME") + string("/.kubsh_history"));
+    string home = getenv("HOME");
+    ofstream file(home + "/.kubsh_history");
     for (const auto& command : history) {
         file << command << endl;
     }
 }
 
 int main() {
-    // Flush after every std::cout / std:cerr
     cout << unitbuf;
     cerr << unitbuf;
     
     string input;
     vector<string> history = loadHistory();
     
-    while(true) {
-        cout << "$ ";
+   while(true) {
+        // НЕ выводим "$ " сразу
         
         if (!getline(cin, input)) {
             cout << "\nCtrl+D" << endl;
             break;
+        }
+        
+        if (input.empty()) {
+            continue;
         }
         
         if (input != "\\q") {
@@ -50,27 +52,43 @@ int main() {
             break;
         }
         
-        if (input.find("echo ") == 0) {
-            cout << input.substr(5) << endl;  
+        // DEBUG - МАКСИМАЛЬНО ПРОСТО
+        if (input.rfind("debug ", 0) == 0) {
+            string text = input.substr(6);
+            
+            // Убираем кавычки
+            if (text.front() == '"' || text.front() == '\'') {
+                text = text.substr(1, text.size() - 2);
+            }
+            
+            cout << text << endl;
+            cout << "$ ";  // <- приглашение ТОЛЬКО после вывода
+            continue;
+        }
+               // Команда \e - вывод переменной окружения
+        if (input.rfind("\\e ", 0) == 0) {
+            string var = input.substr(3);
+            
+            // Убираем $ если есть
+            if (var.front() == '$') {
+                var = var.substr(1);
+            }
+            
+            char* value = getenv(var.c_str());
+            if (value != nullptr) {
+                cout << value << endl;
+            } else {
+                cout << endl;  // пустая строка если нет переменной
+            }
+            continue;
         }
 
-        else {
-            cout << "Введённая строка: " << input << endl;
-            /*while(true) {
-	      cout << input << endl;
-	      if (cin.eof()) {
-		cout << "\nCtrl+D" << endl;
-		saveHistory(history);
-		return 0;
-	      }
-            }*/
-        }
+ 
+        // Command not found
+        cout << input << ": command not found" << endl;
+        cout << "$ ";
     }
     
-
     saveHistory(history);
-    
     return 0;
 }
-
-
