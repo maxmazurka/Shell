@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include "vfs.h"
 
 using namespace std;
 
@@ -35,6 +36,8 @@ void handle_signal(int sig) {
 }
 
 int main() {
+	
+    init_vfs();	
     signal(SIGHUP, handle_signal);
     
     cout << unitbuf;
@@ -171,6 +174,48 @@ int main() {
                     command_executed = true;
                 }
             }
+        }
+	
+	        // Команда \l - информация о диске
+        if (input.rfind("\\l ", 0) == 0) {
+            string device = input.substr(3);
+            
+            // Убираем /dev/ если есть
+            if (device.rfind("/dev/", 0) == 0) {
+                device = device.substr(5);
+            }
+            
+            // Пути в sysfs
+            string size_path = "/sys/block/" + device + "/size";
+            string model_path = "/sys/block/" + device + "/device/model";
+            
+            ifstream size_file(size_path);
+            ifstream model_file(model_path);
+            
+            if (size_file.good() || model_file.good()) {
+                cout << "Device: /dev/" << device << endl;
+                
+                string size;
+                getline(size_file, size);
+                if (!size.empty()) {
+                    long long sectors = stoll(size);
+                    long long bytes = sectors * 512;
+                    long long mb = bytes / (1024 * 1024);
+                    long long gb = mb / 1024;
+                    cout << "Size: " << gb << " GB (" << mb << " MB, " << bytes << " bytes)" << endl;
+                }
+                
+                string model;
+                getline(model_file, model);
+                if (!model.empty()) {
+                    cout << "Model: " << model << endl;
+                }
+            } else {
+                cout << "Device /dev/" << device << " not found" << endl;
+            }
+            
+            cout << "$ ";
+            continue;
         }
         
         if (!command_executed) {
