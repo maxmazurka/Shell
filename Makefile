@@ -58,12 +58,11 @@ package: build
 	@ls -lh *.deb
 
 # ============================================
-# Тесты в Docker (РАБОЧАЯ ВЕРСИЯ)
-# ============================================
+# Тесты в Docker
 test: build
 	@echo "🧪 Запускаем тесты в Docker..."
 	docker run --rm \
-		-v /home/MSI:/mnt \
+		-v $$(pwd):/mnt \
 		tyvik/kubsh_test:master \
 		bash -c "cp /mnt/kubsh /usr/local/bin/ && chmod +x /usr/local/bin/kubsh && cd /opt && pytest -v"
 
