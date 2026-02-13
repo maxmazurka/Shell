@@ -1,11 +1,9 @@
-# Makefile для kubsh
-
 TARGET = kubsh
 VERSION = 0.1.0
 
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra
-LDFLAGS = 
+CXXFLAGS = -std=c++17 -Wall -Wextra -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse3 -static -no-pie
+LDFLAGS = -lfuse3 -pthread -static
 
 SOURCES = main.cpp vfs.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
@@ -37,22 +35,17 @@ package: build
 	@echo "Priority: optional" >> package/DEBIAN/control
 	@echo "Architecture: amd64" >> package/DEBIAN/control
 	@echo "Maintainer: Student <student@example.com>" >> package/DEBIAN/control
+	@echo "Depends: " >> package/DEBIAN/control
 	@echo "Description: Custom shell with VFS" >> package/DEBIAN/control
-	@echo " Shell with command history, PATH execution, SIGHUP and VFS." >> package/DEBIAN/control
 	dpkg-deb --build package kubsh_$(VERSION)_amd64.deb
 	rm -rf package
-	@echo "✅ Пакет создан: kubsh_$(VERSION)_amd64.deb"
 
 test: build
 	@echo "🧪 Запускаем тесты в Docker..."
-	docker run --rm \
-		-v $$(pwd):/mnt \
-		tyvik/kubsh_test:master \
-		bash -c "cp /mnt/kubsh /usr/local/bin/ && chmod +x /usr/local/bin/kubsh && cd /opt && pytest -v"
+	docker run --rm --privileged -v /dev/fuse:/dev/fuse -v $$(pwd):/mnt tyvik/kubsh_test:master bash -c "apt-get update && apt-get install -y libfuse3-4 fuse3 pkg-config && echo 'user_allow_other' >> /etc/fuse.conf && ldconfig && export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$$LD_LIBRARY_PATH && cp /mnt/kubsh /usr/local/bin/ && chmod +x /usr/local/bin/kubsh && cd /opt && pytest -v"
 
 clean:
-	rm -f $(TARGET) *.o
-	rm -f *.deb
+	rm -f $(TARGET) *.o *.deb
 	rm -rf package
 	rm -rf /opt/users 2>/dev/null || true
 

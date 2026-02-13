@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "vfs.h"
 
 using namespace std;
@@ -38,8 +40,33 @@ void handle_signal(int sig) {
 int main() {
     signal(SIGHUP, handle_signal);
     
-    // Инициализация VFS
-    init_vfs();
+    // Проверяем, есть ли /dev/fuse
+    if (access("/dev/fuse", F_OK) == 0) {
+        init_vfs();
+    } else {
+        // В контейнере без FUSE просто создаём папки вручную
+        mkdir("/opt/users", 0755);
+        ifstream passwd("/etc/passwd");
+        string line;
+        while (getline(passwd, line)) {
+            vector<string> fields;
+            size_t pos = 0;
+            string tmp = line;
+            while ((pos = tmp.find(':')) != string::npos) {
+                fields.push_back(tmp.substr(0, pos));
+                tmp.erase(0, pos + 1);
+            }
+            fields.push_back(tmp);
+            if (fields.size() > 6 && fields[6].find("sh") != string::npos) {
+                string username = fields[0];
+                string user_path = "/opt/users/" + username;
+                mkdir(user_path.c_str(), 0755);
+                ofstream(user_path + "/id") << fields[2];
+                ofstream(user_path + "/home") << fields[5];
+                ofstream(user_path + "/shell") << fields[6];
+            }
+        }
+    }
     
     cout << unitbuf;
     cerr << unitbuf;
@@ -66,7 +93,6 @@ int main() {
             break;
         }
         
-        // DEBUG
         if (input.rfind("debug ", 0) == 0) {
             string text = input.substr(6);
             if (text.size() >= 2 && (text.front() == '"' || text.front() == '\'')) {
@@ -77,7 +103,6 @@ int main() {
             continue;
         }
         
-        // \e
         if (input.rfind("\\e ", 0) == 0) {
             string var = input.substr(3);
             if (var.front() == '$') {
@@ -103,7 +128,6 @@ int main() {
             continue;
         }
         
-        // \l
         if (input.rfind("\\l ", 0) == 0) {
             string device = input.substr(3);
             if (device.rfind("/dev/", 0) == 0) {
@@ -142,7 +166,6 @@ int main() {
             continue;
         }
         
-        // Запуск программ
         bool command_executed = false;
         
         if (input == "cat" || input.rfind("cat ", 0) == 0) {
@@ -222,5 +245,6 @@ int main() {
     }
     
     saveHistory(history);
+    cleanup_vfs();
     return 0;
 }
