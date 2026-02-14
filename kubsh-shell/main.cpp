@@ -168,7 +168,7 @@ int main() {
         
         bool command_executed = false;
         
-        if (input == "cat" || input.rfind("cat ", 0) == 0) {
+        /*if (input == "cat" || input.rfind("cat ", 0) == 0) {
             const char* cat_path = "/bin/cat";
             if (access(cat_path, X_OK) == 0) {
                 pid_t pid = fork();
@@ -185,7 +185,7 @@ int main() {
                     command_executed = true;
                 }
             }
-        }
+        }*/
         else if (input.find('/') == string::npos && !command_executed) {
             char* path_env = getenv("PATH");
             if (path_env != nullptr) {
