@@ -186,7 +186,7 @@ int main() {
                 }
             }
         }*/
-        else if (input.find('/') == string::npos && !command_executed) {
+        if (input.find('/') == string::npos && !command_executed) {
             char* path_env = getenv("PATH");
             if (path_env != nullptr) {
                 string path_str = path_env;
