@@ -1,0 +1,44 @@
+#!/bin/bash
+set -e
+
+echo "🚀 Настройка Kubsh после установки..."
+
+# 1. Создаём группу fuse если её нет
+if ! getent group fuse >/dev/null; then
+    groupadd fuse
+    echo "✓ Группа fuse создана"
+fi
+
+# 2. Добавляем текущего пользователя в группу fuse
+if [ -n "$SUDO_USER" ]; then
+    usermod -a -G fuse "$SUDO_USER"
+    echo "✓ Пользователь $SUDO_USER добавлен в группу fuse"
+    echo "⚠️  Выйдите и зайдите заново, чтобы изменения вступили в силу!"
+fi
+
+# 3. Проверяем права на /dev/fuse
+if [ -e /dev/fuse ]; then
+    chmod 666 /dev/fuse 2>/dev/null || true
+    echo "✓ Права на /dev/fuse настроены"
+fi
+
+# 4. Создаём точку монтирования
+mkdir -p /opt/users
+chmod 777 /opt/users
+echo "✓ Точка монтирования /opt/users создана"
+
+# 5. Загружаем модуль FUSE
+modprobe fuse 2>/dev/null || true
+echo "✓ Модуль FUSE загружен"
+
+# 6. Добавляем пользователя в /etc/fuse.conf для allow_other
+if [ -f /etc/fuse.conf ]; then
+    if ! grep -q "^user_allow_other" /etc/fuse.conf; then
+        echo "user_allow_other" >> /etc/fuse.conf
+        echo "✓ /etc/fuse.conf настроен"
+    fi
+fi
+
+echo "✅ Настройка Kubsh завершена!"
+echo "👉 Для запуска: просто введи 'kubsh' в терминале"
+exit 0

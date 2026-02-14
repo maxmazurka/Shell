@@ -29,16 +29,27 @@ package: build
 	mkdir -p package/DEBIAN
 	cp $(TARGET) package/usr/bin/
 	chmod 755 package/usr/bin/$(TARGET)
+	
+	# Копируем postinst скрипт
+	if [ -f debian/postinst ]; then \
+		cp debian/postinst package/DEBIAN/; \
+		chmod 755 package/DEBIAN/postinst; \
+		echo "✓ postinst скрипт добавлен"; \
+	fi
+	
 	@echo "Package: kubsh" > package/DEBIAN/control
 	@echo "Version: $(VERSION)" >> package/DEBIAN/control
 	@echo "Section: utils" >> package/DEBIAN/control
 	@echo "Priority: optional" >> package/DEBIAN/control
 	@echo "Architecture: amd64" >> package/DEBIAN/control
 	@echo "Maintainer: Student <student@example.com>" >> package/DEBIAN/control
-	@echo "Depends: " >> package/DEBIAN/control
+	@echo "Depends: libfuse3-4, fuse3, adduser" >> package/DEBIAN/control
 	@echo "Description: Custom shell with VFS" >> package/DEBIAN/control
+	@echo " Shell with command history, PATH execution, SIGHUP and VFS." >> package/DEBIAN/control
 	dpkg-deb --build package kubsh_$(VERSION)_amd64.deb
 	rm -rf package
+	@echo "✅ Пакет создан: kubsh_$(VERSION)_amd64.deb"
+
 
 test: build
 	@echo "🧪 Запускаем тесты в Docker..."
