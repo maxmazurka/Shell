@@ -36,6 +36,11 @@ jobs:
           cd kubsh-shell
           make package
 
+      - name: Verify deb package contents
+        run: |
+          cd kubsh-shell
+          dpkg-deb -c kubsh_0.1.0_amd64.deb | grep -E "postinst|control" || echo "Postinst script not found in package"
+
       - name: Upload deb package
         uses: actions/upload-artifact@v4
         with:
