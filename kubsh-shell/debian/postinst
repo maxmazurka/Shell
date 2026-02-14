@@ -22,10 +22,10 @@ if [ -e /dev/fuse ]; then
     echo "✓ Права на /dev/fuse настроены"
 fi
 
-# 4. Создаём точку монтирования
-mkdir -p /opt/users
-chmod 777 /opt/users
-echo "✓ Точка монтирования /opt/users создана"
+# 4. НЕ СОЗДАЁМ ПАПКУ! Удаляем если есть (чтобы FUSE создал сам)
+if [ -d /opt/users ]; then
+    rmdir /opt/users 2>/dev/null || echo "⚠️ Папка /opt/users существует, будет создана FUSE при запуске"
+fi
 
 # 5. Загружаем модуль FUSE
 modprobe fuse 2>/dev/null || true
