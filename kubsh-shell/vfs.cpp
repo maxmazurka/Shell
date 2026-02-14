@@ -213,19 +213,13 @@ void fuse_thread() {
         fprintf(stderr, "✓ /dev/fuse exists\n");
     } else {
         fprintf(stderr, "✗ /dev/fuse NOT found\n");
+        return;
     }
     
-    if (access("/dev/fuse", R_OK | W_OK) == 0) {
-        fprintf(stderr, "✓ /dev/fuse readable and writable\n");
-    } else {
-        fprintf(stderr, "✗ /dev/fuse permission denied\n");
-    }
-    
-    if (access(users_path.c_str(), F_OK) == 0) {
-        fprintf(stderr, "✓ Mount point %s exists\n", users_path.c_str());
-    } else {
-        fprintf(stderr, "✗ Mount point %s does NOT exist, creating...\n", users_path.c_str());
-        mkdir(users_path.c_str(), 0755);
+    // НЕ СОЗДАЁМ ПАПКУ! Только проверяем
+    if (access(users_path.c_str(), F_OK) != 0) {
+        fprintf(stderr, "✗ Mount point %s does NOT exist. FUSE will create it.\n", users_path.c_str());
+        // return; // НЕ ВЫХОДИМ!
     }
     
     init_operations();
