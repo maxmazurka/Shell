@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++ make dpkg-dev
+          sudo apt-get install -y g++ make dpkg-dev libfuse3-dev fuse3 pkg-config
 
       - name: Build project
         run: |
